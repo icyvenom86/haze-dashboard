@@ -1,1 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
+<title>HomeTeamNS Haze Dashboard</title>
+
+<style>
+
+body{
+    font-family:Segoe UI,Arial,sans-serif;
+    margin:0;
+    background:#eef2f7;
+}
+
+.header{
+    background:#003366;
+    color:white;
+    padding:20px;
+    text-align:center;
+}
+
+.container{
+    padding:20px;
+}
+
+.status-banner{
+    padding:20px;
+    text-align:center;
+    font-size:30px;
+    font-weight:bold;
+    color:white;
+    border-radius:12px;
+    margin-bottom:20px;
+}
+
+.green{
+    background:#28a745;
+}
+
+.amber{
+    background:#ff9800;
+}
+
+.red{
+    background:#d32f2f;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:15px;
+}
+
+.card{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    text-align:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+.region{
+    font-size:18px;
+    font-weight:bold;
+}
+
+.value{
+    font-size:48px;
+    margin:10px 0;
+    color:#003366;
+}
+
+.advisory{
+    background:white;
+    margin-top:20px;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+ul{
+    line-height:1.8;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<h1>🌫 HomeTeamNS Haze Command Centre</h1>
+<p id="updated">Loading...</p>
+</div>
+
+<div class="container">
+
+<div id="overallStatus" class="status-banner">
+Loading...
+</div>
+
+<div id="readings" class="grid"></div>
+
+<div class="advisory">
+
+<h2>Operational Advisory</h2>
+
+<ul>
+<li id="outdoor"></li>
+<li id="pool"></li>
+<li id="events"></li>
+</ul>
+
+</div>
+
+</div>
+
+<script>
+
+async function getData() {
+
+const response = await fetch(
+'https://api-open.data.gov.sg/v2/real-time/api/pm25'
+);
+
+const result = await response.json();
+
+const data =
+result.data.items[0].readings.pm25_one_hourly;
+
+const timestamp =
+result.data.items[0].timestamp;
+
+document.getElementById("updated").innerHTML =
+"Last Updated: " + timestamp;
+
+let html="";
+
+let highest=0;
+
+Object.entries(data).forEach(([region,value])=>{
+
+if(value > highest){
+highest=value;
+}
+
+html += `
+<div class="card">
+<div class="region">${region.toUpperCase()}</div>
+<div class="value">${value}</div>
+<div>μg/m³</div>
+</div>
+`;
+
+});
+
+document.getElementById("readings").innerHTML = html;
+
+let status;
+let className;
+
+if(highest <= 55){
+status="🟢 GREEN - Normal Operations";
+className="green";
+
+document.getElementById("outdoor").innerHTML =
+"Outdoor Activities: Proceed as planned";
+
+document.getElementById("pool").innerHTML =
+"Swimming Pool: Normal operation";
+
+document.getElementById("events").innerHTML =
+"Events: Proceed as planned";
+
+}
+else if(highest <= 150){
+status="🟠 AMBER - Monitor Conditions";
+className="amber";
+
+document.getElementById("outdoor").innerHTML =
+"Outdoor Activities: Monitor participants closely";
+
+document.getElementById("pool").innerHTML =
+"Swimming Pool: Increase observations";
+
+document.getElementById("events").innerHTML =
+"Events: Consider modifications";
+
+}
+else{
+
+status="🔴 RED - High Haze";
+
+className="red";
+
+document.getElementById("outdoor").innerHTML =
+"Outdoor Activities: Consider suspension";
+
+document.getElementById("pool").innerHTML =
+"Swimming Pool: Review operations";
+
+document.getElementById("events").innerHTML =
+"Events: Consider postponement";
+
+}
+
+const banner =
+document.getElementById("overallStatus");
+
+banner.className =
+"status-banner " + className;
+
+banner.innerHTML = status;
+
+}
+
+getData();
+
+setInterval(getData,900000);
+
+</script>
+
+</body>
+</html>
